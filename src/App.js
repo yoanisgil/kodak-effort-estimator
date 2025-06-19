@@ -1,28 +1,84 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Container, Typography, MenuItem, Select, InputLabel, FormControl,
     TextField, Button, Box, Paper, Grid, FormControlLabel, Checkbox
 } from '@mui/material';
-import {BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+
+// Translations for EN and FR
+const translations = {
+    en: {
+        title: 'Effort Level Estimator',
+        selectTask: 'Select Task',
+        yourWeight: 'Your Weight (kg)',
+        duration: 'Duration (minutes)',
+        override: 'Override kcal/min & oxygen values',
+        customMinKcal: 'Custom Min kcal/min',
+        customMaxKcal: 'Custom Max kcal/min',
+        customMinO2: 'Custom Min O₂ (ml/kg/min)',
+        customMaxO2: 'Custom Max O₂ (ml/kg/min)',
+        estimateResults: 'Estimation Results',
+        effortLevel: 'Effort Level',
+        oxygenDemand: 'Oxygen Demand',
+        energyExpenditure: 'Energy Expenditure',
+        totalEnergy: 'Total Energy',
+        formula: 'Formula',
+        fillOutForm: 'Fill out the form to see estimated values.',
+        kcalMinByTask: 'kcal/min by Task (Based on Your Weight)',
+        kodakTable: 'Kodak Effort Levels (Table 1.21)',
+        searchTask: 'Search Task',
+        filterByEffort: 'Filter by Effort',
+        showTable: 'Show Original Effort Level Table',
+        hideTable: 'Hide Original Effort Level Table',
+    },
+    fr: {
+        title: "Estimateur de niveau d'effort",
+        selectTask: 'Sélectionnez la tâche',
+        yourWeight: 'Votre poids (kg)',
+        duration: 'Durée (minutes)',
+        override: 'Remplacer kcal/min & valeurs d\'oxygène',
+        customMinKcal: 'kcal/min min personnalisé',
+        customMaxKcal: 'kcal/min max personnalisé',
+        customMinO2: 'O₂ min personnalisé (ml/kg/min)',
+        customMaxO2: 'O₂ max personnalisé (ml/kg/min)',
+        estimateResults: "Résultats de l'estimation",
+        effortLevel: 'Niveau d\'effort',
+        oxygenDemand: 'Demande en oxygène',
+        energyExpenditure: 'Dépense énergétique',
+        totalEnergy: 'Énergie totale',
+        formula: 'Formule',
+        fillOutForm: 'Remplissez le formulaire pour voir les valeurs estimées.',
+        kcalMinByTask: 'kcal/min par tâche (basé sur votre poids)',
+        kodakTable: "Niveaux d'effort Kodak (Tableau 1.21)",
+        searchTask: 'Rechercher une tâche',
+        filterByEffort: "Filtrer par niveau d'effort",
+        showTable: 'Afficher le tableau original des niveaux d\'effort',
+        hideTable: 'Cacher le tableau original des niveaux d\'effort',
+    }
+};
 
 // Task metadata based on Kodak Table 1.21
 const taskOptions = [
-    {label: 'Desk work (typing)', value: 'desk'},
-    {label: 'Machine operation (standing, some lifting)', value: 'machine'},
-    {label: 'Manual labor (lifting >20kg)', value: 'manual'},
-    {label: 'Walking + lifting (e.g. warehouse)', value: 'walking'},
-    {label: 'High-intensity labor (e.g. shoveling)', value: 'heavy'},
+    { label: 'Desk work (typing)', value: 'desk' },
+    { label: 'Machine operation (standing, some lifting)', value: 'machine' },
+    { label: 'Manual labor (lifting >20kg)', value: 'manual' },
+    { label: 'Walking + lifting (e.g. warehouse)', value: 'walking' },
+    { label: 'High-intensity labor (e.g. shoveling)', value: 'heavy' },
 ];
 
 const effortLevels = {
-    desk: {level: 'Light', o2: [3, 6], kcal: [1, 2]},
-    machine: {level: 'Moderate', o2: [7, 11], kcal: [2.5, 4]},
-    manual: {level: 'Mod–Heavy', o2: [10, 14], kcal: [3.5, 5.2]},
-    walking: {level: 'Mod–Heavy', o2: [10, 14], kcal: [3.5, 5.2]},
-    heavy: {level: 'Very Heavy', o2: [15, 25], kcal: [5.5, 9]},
+    desk: { level: 'Light', o2: [3, 6], kcal: [1, 2] },
+    machine: { level: 'Moderate', o2: [7, 11], kcal: [2.5, 4] },
+    manual: { level: 'Mod–Heavy', o2: [10, 14], kcal: [3.5, 5.2] },
+    walking: { level: 'Mod–Heavy', o2: [10, 14], kcal: [3.5, 5.2] },
+    heavy: { level: 'Very Heavy', o2: [15, 25], kcal: [5.5, 9] },
 };
 
 export default function EffortEstimatorApp() {
+    // Detect user language: 'fr' or fallback 'en'
+    const userLang = navigator.language.startsWith('fr') ? 'fr' : 'en';
+    const t = translations[userLang];
+
     const [task, setTask] = useState('');
     const [weight, setWeight] = useState(75);
     const [duration, setDuration] = useState(60);
@@ -35,9 +91,12 @@ export default function EffortEstimatorApp() {
     const [filterText, setFilterText] = useState('');
     const [filterLevel, setFilterLevel] = useState('');
 
-    // Automatically estimate when all inputs are available
+    // Auto calculate on input change
     useEffect(() => {
-        if (!task || !weight || !duration) return;
+        if (!task || !weight || !duration) {
+            setResult(null);
+            return;
+        }
 
         const base = effortLevels[task];
         const level = base.level;
@@ -56,10 +115,10 @@ export default function EffortEstimatorApp() {
         const totalKcal = `${totalRange[0]} – ${totalRange[1]}`;
         const o2Range = `${o2Base[0]} – ${o2Base[1]}`;
 
-        setResult({level, o2Range, kcalRange, totalKcal});
+        setResult({ level, o2Range, kcalRange, totalKcal });
     }, [task, weight, duration, overrideEnabled, customKcalMin, customKcalMax, customO2Min, customO2Max]);
 
-    const chartData = Object.entries(effortLevels).map(([key, {kcal}]) => {
+    const chartData = Object.entries(effortLevels).map(([key, { kcal }]) => {
         const kcalBase = (overrideEnabled && key === task && customKcalMin && customKcalMax)
             ? [parseFloat(customKcalMin), parseFloat(customKcalMax)]
             : kcal;
@@ -79,17 +138,17 @@ export default function EffortEstimatorApp() {
     });
 
     return (
-        <Container maxWidth="xl" sx={{mt: 5, mb: 8}}>
+        <Container maxWidth="xl" sx={{ mt: 5, mb: 8 }}>
             <Grid container spacing={4}>
                 {/* Estimator Form */}
                 <Grid item xs={12} md={6} lg={4}>
-                    <Paper sx={{p: 4}}>
-                        <Typography variant="h5" gutterBottom>Effort Level Estimator</Typography>
+                    <Paper sx={{ p: 4 }}>
+                        <Typography variant="h5" gutterBottom>{t.title}</Typography>
 
-                        <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                             <FormControl fullWidth>
-                                <InputLabel>Select Task</InputLabel>
-                                <Select value={task} label="Select Task" onChange={e => setTask(e.target.value)}>
+                                <InputLabel>{t.selectTask}</InputLabel>
+                                <Select value={task} label={t.selectTask} onChange={e => setTask(e.target.value)}>
                                     {taskOptions.map(opt => (
                                         <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                                     ))}
@@ -98,7 +157,7 @@ export default function EffortEstimatorApp() {
 
                             <TextField
                                 fullWidth
-                                label="Your Weight (kg)"
+                                label={t.yourWeight}
                                 type="number"
                                 value={weight}
                                 onChange={e => setWeight(+e.target.value)}
@@ -106,46 +165,45 @@ export default function EffortEstimatorApp() {
 
                             <TextField
                                 fullWidth
-                                label="Duration (minutes)"
+                                label={t.duration}
                                 type="number"
                                 value={duration}
                                 onChange={e => setDuration(+e.target.value)}
                             />
 
                             <FormControlLabel
-                                control={<Checkbox checked={overrideEnabled}
-                                                   onChange={(e) => setOverrideEnabled(e.target.checked)}/>}
-                                label="Override kcal/min & oxygen values"
+                                control={<Checkbox checked={overrideEnabled} onChange={(e) => setOverrideEnabled(e.target.checked)} />}
+                                label={t.override}
                             />
 
                             {overrideEnabled && (
-                                <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                                    <Box sx={{display: 'flex', gap: 2}}>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                    <Box sx={{ display: 'flex', gap: 2 }}>
                                         <TextField
-                                            label="Custom Min kcal/min"
+                                            label={t.customMinKcal}
                                             type="number"
                                             value={customKcalMin}
                                             onChange={(e) => setCustomKcalMin(e.target.value)}
                                             fullWidth
                                         />
                                         <TextField
-                                            label="Custom Max kcal/min"
+                                            label={t.customMaxKcal}
                                             type="number"
                                             value={customKcalMax}
                                             onChange={(e) => setCustomKcalMax(e.target.value)}
                                             fullWidth
                                         />
                                     </Box>
-                                    <Box sx={{display: 'flex', gap: 2}}>
+                                    <Box sx={{ display: 'flex', gap: 2 }}>
                                         <TextField
-                                            label="Custom Min O₂ (ml/kg/min)"
+                                            label={t.customMinO2}
                                             type="number"
                                             value={customO2Min}
                                             onChange={(e) => setCustomO2Min(e.target.value)}
                                             fullWidth
                                         />
                                         <TextField
-                                            label="Custom Max O₂ (ml/kg/min)"
+                                            label={t.customMaxO2}
                                             type="number"
                                             value={customO2Max}
                                             onChange={(e) => setCustomO2Max(e.target.value)}
@@ -163,27 +221,25 @@ export default function EffortEstimatorApp() {
                     <Grid container spacing={2}>
                         {/* Results */}
                         <Grid item xs={12} md={6}>
-                            <Paper sx={{p: 4, height: '100%'}}>
-                                <Typography variant="h6" gutterBottom>Estimation Results</Typography>
+                            <Paper sx={{ p: 4, height: '100%' }}>
+                                <Typography variant="h6" gutterBottom>{t.estimateResults}</Typography>
                                 {result ? (
                                     <Box>
-                                        <Typography><strong>Effort Level:</strong> {result.level}</Typography>
-                                        <Typography><strong>Oxygen
-                                            Demand:</strong> {result.o2Range} ml/kg/min</Typography>
-                                        <Typography><strong>Energy
-                                            Expenditure:</strong> {result.kcalRange} kcal/min</Typography>
-                                        <Typography><strong>Total Energy:</strong> {result.totalKcal} kcal</Typography>
+                                        <Typography><strong>{t.effortLevel}:</strong> {result.level}</Typography>
+                                        <Typography><strong>{t.oxygenDemand}:</strong> {result.o2Range} ml/kg/min</Typography>
+                                        <Typography><strong>{t.energyExpenditure}:</strong> {result.kcalRange} kcal/min</Typography>
+                                        <Typography><strong>{t.totalEnergy}:</strong> {result.totalKcal} kcal</Typography>
 
-                                        <Typography variant="subtitle2" sx={{mt: 2, color: 'gray'}}>
-                                            Formula:<br/>
-                                            kcal/min = base × (weight / 75)<br/>
-                                            Total kcal = kcal/min × duration<br/>
+                                        <Typography variant="subtitle2" sx={{ mt: 2, color: 'gray' }}>
+                                            {t.formula}:<br />
+                                            kcal/min = base × (weight / 75)<br />
+                                            Total kcal = kcal/min × duration<br />
                                             O₂ demand is task-specific (or overridden)
                                         </Typography>
                                     </Box>
                                 ) : (
                                     <Typography variant="body2" color="text.secondary">
-                                        Fill out the form to see estimated values.
+                                        {t.fillOutForm}
                                     </Typography>
                                 )}
                             </Paper>
@@ -191,42 +247,42 @@ export default function EffortEstimatorApp() {
 
                         {/* Kodak Table */}
                         <Grid item xs={12} md={6}>
-                            <Paper sx={{p: 3}}>
-                                <Typography variant="h6" gutterBottom>Kodak Effort Levels (Table 1.21)</Typography>
-                                <Box sx={{display: 'flex', gap: 2, mb: 2}}>
+                            <Paper sx={{ p: 3 }}>
+                                <Typography variant="h6" gutterBottom>{t.kodakTable}</Typography>
+                                <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                                     <TextField
-                                        label="Search Task"
+                                        label={t.searchTask}
                                         value={filterText}
                                         onChange={(e) => setFilterText(e.target.value)}
                                         fullWidth
                                     />
                                     <FormControl fullWidth>
-                                        <InputLabel>Filter by Effort</InputLabel>
+                                        <InputLabel>{t.filterByEffort}</InputLabel>
                                         <Select
                                             value={filterLevel}
                                             onChange={e => setFilterLevel(e.target.value)}
-                                            label="Filter by Effort"
+                                            label={t.filterByEffort}
                                         >
-                                            <MenuItem value="">All</MenuItem>
+                                            <MenuItem value="">{t.filterByEffort}</MenuItem>
                                             {[...new Set(Object.values(effortLevels).map(e => e.level))].map(level => (
                                                 <MenuItem key={level} value={level}>{level}</MenuItem>
                                             ))}
                                         </Select>
                                     </FormControl>
                                 </Box>
-                                <Paper sx={{overflowX: 'auto'}}>
-                                    <table style={{width: '100%', borderCollapse: 'collapse'}}>
-                                        <thead style={{background: '#f5f5f5'}}>
+                                <Paper sx={{ overflowX: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                        <thead style={{ background: '#f5f5f5' }}>
                                         <tr>
                                             <th style={th}>Task</th>
-                                            <th style={th}>Effort Level</th>
+                                            <th style={th}>{t.effortLevel}</th>
                                             <th style={th}>kcal/min</th>
                                             <th style={th}>O₂ (ml/kg/min)</th>
                                         </tr>
                                         </thead>
                                         <tbody>
                                         {filteredTable.map(opt => {
-                                            const {kcal, o2, level} = effortLevels[opt.value];
+                                            const { kcal, o2, level } = effortLevels[opt.value];
                                             return (
                                                 <tr key={opt.value}>
                                                     <td style={td}>{opt.label}</td>
@@ -246,17 +302,17 @@ export default function EffortEstimatorApp() {
             </Grid>
 
             {/* Chart */}
-            <Box sx={{mt: 6}}>
+            <Box sx={{ mt: 6 }}>
                 <Typography variant="h6" gutterBottom>
-                    kcal/min by Task (Based on Your Weight)
+                    {t.kcalMinByTask}
                 </Typography>
                 <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={chartData}>
-                        <XAxis dataKey="task"/>
-                        <YAxis/>
-                        <Tooltip/>
-                        <Bar dataKey="kcalMin" fill="#1976d2" name="Min kcal/min"/>
-                        <Bar dataKey="kcalMax" fill="#64b5f6" name="Max kcal/min"/>
+                        <XAxis dataKey="task" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="kcalMin" fill="#1976d2" name="Min kcal/min" />
+                        <Bar dataKey="kcalMax" fill="#64b5f6" name="Max kcal/min" />
                     </BarChart>
                 </ResponsiveContainer>
             </Box>
